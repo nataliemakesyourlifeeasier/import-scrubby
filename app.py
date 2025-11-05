@@ -143,8 +143,8 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
                     errors.append({
                         "type": "MISSING_VALUE",
                         "column": report_col_name,
-                        # Row calculation: +1 for 0-index, +1 for header row = +2
-                        "row": idx + 2, 
+                        # FIX: idx + 3 for correct original Excel row reporting
+                        "row": idx + 3, 
                         "message": f"Required field is empty."
                     })
 
@@ -166,7 +166,9 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
                     error_indices = series_clean[invalid_mask].index.tolist()
                     for idx in error_indices:
                         errors.append({
-                            "type": "TYPE_ERROR", "column": report_col_name, "row": idx + 2, 
+                            "type": "TYPE_ERROR", "column": report_col_name, 
+                            # FIX: idx + 3 for correct original Excel row reporting
+                            "row": idx + 3, 
                             "value": df.loc[idx, col_name], "message": f"Value is not a valid number."
                         })
                 
@@ -180,7 +182,9 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
                         error_indices = valid_numeric_series[min_mask].index.tolist()
                         for idx in error_indices:
                             errors.append({
-                                "type": "VALUE_ERROR", "column": report_col_name, "row": idx + 2,
+                                "type": "VALUE_ERROR", "column": report_col_name, 
+                                # FIX: idx + 3 for correct original Excel row reporting
+                                "row": idx + 3,
                                 "value": df.loc[idx, col_name], "message": f"Value must be greater than or equal to {min_val}."
                             })
 
@@ -196,7 +200,9 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
                 error_indices = series_clean[invalid_mask].index.tolist()
                 for idx in error_indices:
                     errors.append({
-                        "type": "FORMAT_ERROR", "column": report_col_name, "row": idx + 2,
+                        "type": "FORMAT_ERROR", "column": report_col_name, 
+                        # FIX: idx + 3 for correct original Excel row reporting
+                        "row": idx + 3,
                         "value": df.loc[idx, col_name], "message": f"Date must match format '{date_format}'."
                     })
             # Add the converted date column back for the date overlap check
@@ -211,7 +217,9 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
                 error_indices = series_clean[invalid_mask].index.tolist()
                 for idx in error_indices:
                     errors.append({
-                        "type": "FORMAT_ERROR", "column": report_col_name, "row": idx + 2,
+                        "type": "FORMAT_ERROR", "column": report_col_name, 
+                        # FIX: idx + 3 for correct original Excel row reporting
+                        "row": idx + 3,
                         "value": df.loc[idx, col_name], "message": f"Value is not a valid email address format."
                     })
     
@@ -302,6 +310,7 @@ def main_app():
                     try:
                         return int(row_value) 
                     except (ValueError, TypeError):
+                        # Pushes non-numeric ('N/A') rows to the end
                         return 999999 
                 
                 error_report.sort(key=lambda e: (stable_row_sort_key(e), e['column']))
