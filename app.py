@@ -42,6 +42,11 @@ VALIDATION_RULES_CONFIG = {
 def scrub_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Performs core data cleanup: strips whitespace, drops duplicates/empty rows."""
     
+    # CRITICAL FIX: The file is often imported with the header row treated as data.
+    # We drop the first row to ensure validation starts on actual records.
+    if len(df) > 1:
+        df = df.iloc[1:].reset_index(drop=True)
+
     # Trim whitespace from all string cells
     # NOTE: df.applymap is used for compatibility with the old scrubber's behavior
     df = df.applymap(lambda x: str(x).strip() if pd.notnull(x) else x)
@@ -311,4 +316,4 @@ def main_app():
             st.error(f"An unexpected error occurred during file processing: {e}")
 
 if __name__ == "__main__":
-    main_app()   #end
+    main_app()
