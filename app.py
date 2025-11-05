@@ -11,46 +11,40 @@ import sys
 # --- 1. CONFIGURATION (Embedded Validation Rules) ---
 
 # The validation rules are embedded directly into the script for Streamlit deployment.
-# This avoids needing to manage the validation_rules.json file separately.
 VALIDATION_RULES_CONFIG = {
-    "validation_rules": [
-        {"column": "firstName", "required": True, "type": "string", "description": "Guest's first name."},
-        {"column": "lastName", "required": True, "type": "string", "description": "Guest's last name."},
-        {"column": "Email", "required": True, "type": "string", "format": "email", "description": "Guest's email address."},
-        {"column": "phone1", "required": True, "type": "string", "description": "Primary phone number."},
-        {"column": "address1", "required": True, "type": "string", "description": "Primary address."},
-        {"column": "postalCode", "required": True, "description": "postal code."},
-        {"column": "city", "required": True, "type": "string", "description": "City."},
-        {"column": "state", "required": True, "type": "string", "description": "state."},
-        {"column": "country", "required": True, "type": "string", "description": "country."},
-        {"column": "startDate", "required": True, "type": "date", "format": "%Y-%m-%d", "description": "Reservation start date (format: YYYY-MM-DD)."},
-        {"column": "endDate", "required": True, "type": "date", "format": "%Y-%m-%d", "description": "Reservation end date (format: YYYY-MM-DD)."},
-        {"column": "chargeTotal", "required": True, "type": "numeric", "min_value": 0, "description": "Total charge amount (Now Required)."},
-        {"column": "paymentTotal", "required": True, "type": "numeric", "min_value": 0, "description": "Total payment amount (Now Required)."},
-        {"column": "oldConfirmationNumber", "required": True, "description": "Previous confirmation number, if applicable (Now Required)."},
-        {"column": "typeName", "required": True, "type": "string", "description": "The name of the reservation type or site type (must be provided)."},
-        {"column": "siteName", "required": True, "type": "string", "description": "The specific site number or name (Now Required)."},
-        {"column": "ageCategory0", "required": True, "type": "numeric", "min_value": 0, "description": "Count for age category 0 (e.g., Children) (Now Required)."},
-        {"column": "ageCategory1", "required": True, "type": "numeric", "min_value": 0, "description": "Count for age category 1 (e.g., Adults) (Now Required)."},
-        {"column": "ageCategory2", "required": True, "type": "numeric", "min_value": 0, "description": "Count for age category 2 (Now Required)."},
-        {"column": "ageCategory3", "required": True, "type": "numeric", "min_value": 0, "description": "Count for age category 3 (Now Required)."},
-        {"column": "pets", "required": True, "type": "numeric", "min_value": 0, "description": "The number of pets associated with the reservation (Now Required)."}
-    ]
+  "validation_rules": [
+    {"column": "firstName", "required": True, "type": "string", "description": "Guest's first name."},
+    {"column": "lastName", "required": True, "type": "string", "description": "Guest's last name."},
+    {"column": "Email", "required": True, "type": "string", "format": "email", "description": "Guest's email address."},
+    {"column": "phone1", "required": True, "type": "string", "description": "Primary phone number."},
+    {"column": "address1", "required": True, "type": "string", "description": "Primary address."},
+    {"column": "postalCode", "required": True, "description": "postal code."},
+    {"column": "city", "required": True, "type": "string", "description": "City."},
+    {"column": "state", "required": True, "type": "string", "description": "state."},
+    {"column": "country", "required": True, "type": "string", "description": "country."},
+    {"column": "startDate", "required": True, "type": "date", "format": "%Y-%m-%d", "description": "Reservation start date (format: YYYY-MM-DD)."},
+    {"column": "endDate", "required": True, "type": "date", "format": "%Y-%m-%d", "description": "Reservation end date (format: YYYY-MM-DD)."},
+    {"column": "chargeTotal", "required": True, "type": "numeric", "min_value": 0, "description": "Total charge amount (Now Required)."},
+    {"column": "paymentTotal", "required": True, "type": "numeric", "min_value": 0, "description": "Total payment amount (Now Required)."},
+    {"column": "oldConfirmationNumber", "required": True, "description": "Previous confirmation number, if applicable (Now Required)."},
+    {"column": "typeName", "required": True, "type": "string", "description": "The name of the reservation type or site type (must be provided)."},
+    {"column": "siteName", "required": True, "type": "string", "description": "The specific site number or name (Now Required)."},
+    {"column": "ageCategory0", "required": True, "type": "numeric", "min_value": 0, "description": "Count for age category 0 (e.g., Children) (Now Required)."},
+    {"column": "ageCategory1", "required": True, "type": "numeric", "min_value": 0, "description": "Count for age category 1 (e.g., Adults) (Now Required)."},
+    {"column": "ageCategory2", "required": True, "type": "numeric", "min_value": 0, "description": "Count for age category 2 (Now Required)."},
+    {"column": "ageCategory3", "required": True, "type": "numeric", "min_value": 0, "description": "Count for age category 3 (Now Required)."},
+    {"column": "pets", "required": True, "type": "numeric", "min_value": 0, "description": "The number of pets associated with the reservation (Now Required)."}
+  ]
 }
-
 
 # --- 2. SCRUBBING LOGIC (from resPrettyer.py) ---
 
 def scrub_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    """Scrub data: trim whitespace, drop empty rows, drop duplicates, clean all fields."""
+    """Performs core data cleanup: strips whitespace, drops duplicates/empty rows."""
     
     # Trim whitespace from all string cells
     # NOTE: df.applymap is used for compatibility with the old scrubber's behavior
     df = df.applymap(lambda x: str(x).strip() if pd.notnull(x) else x)
-
-    # We must explicitly convert empty strings to NaN for validation/dropna to work correctly
-    # However, we remove this here to maintain row count compatibility with the old scrubber
-    # df.replace(r'^\s*$', np.nan, regex=True, inplace=True) 
 
     # Drop rows that are entirely empty (only drops if cells are truly NaN/None, not just '')
     df = df.dropna(how="all").reset_index(drop=True)
@@ -59,7 +53,6 @@ def scrub_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop_duplicates().reset_index(drop=True)
 
     return df
-
 
 # --- 3. VALIDATION UTILITIES (from validator.py and date overlap logic) ---
 
@@ -104,6 +97,7 @@ def check_date_overlaps(df: pd.DataFrame) -> list:
         return overlaps
 
     if not df_valid.empty:
+        # The apply operation requires the dataframe to have enough rows to group
         grouped_overlaps = df_valid.groupby('campsiteid').apply(find_overlaps_in_group)
         
         # Flatten the list of lists
@@ -138,7 +132,6 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
         
         # 2. REQUIRED check
         if rule.get('required'):
-            # Identify null values (after NaN conversion)
             null_mask = series.isnull()
             if null_mask.any():
                 error_indices = series[null_mask].index.tolist()
@@ -176,7 +169,8 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
                 # Check min_value
                 min_val = rule.get('min_value')
                 if min_val is not None:
-                    valid_numeric_series = numeric_series.dropna()
+                    # FIX APPLIED HERE: Ensure the series is float before comparison to min_val
+                    valid_numeric_series = numeric_series.dropna().astype(float) 
                     min_mask = valid_numeric_series < min_val
                     if min_mask.any():
                         error_indices = valid_numeric_series[min_mask].index.tolist()
@@ -187,8 +181,7 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
                             })
 
             except Exception:
-                # Catch general conversion errors (rare)
-                pass
+                pass # Already handled by other checks
 
         # DATE checks
         elif rule.get('type') == 'date':
@@ -218,7 +211,7 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
                         "value": df.loc[idx, col_name], "message": f"Value is not a valid email address format."
                     })
     
-    # 4. ADVANCED CHECK: Date Overlap (only runs if columns exist)
+    # 4. ADVANCED CHECK: Date Overlap
     if all(col in df.columns for col in ['startdate', 'enddate', 'campsiteid']):
         overlap_errors = check_date_overlaps(df)
         if overlap_errors:
@@ -233,7 +226,7 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
 
 # --- 4. STREAMLIT INTERFACE AND EXECUTION ---
 
-def process_and_validate(df_input) -> tuple:
+def process_and_validate_data(df_input) -> tuple:
     """
     Combines scrubbing and all validation checks.
     Returns: (validation_passed: bool, processed_df: pd.DataFrame, error_report: list)
@@ -273,7 +266,7 @@ def main_app():
                 return
 
             # --- Run the combined process ---
-            validation_passed, processed_df, error_report = process_and_validate(df_input.copy())
+            validation_passed, processed_df, error_report = process_and_validate_data(df_input.copy())
             
             # --- Display Results ---
             st.subheader("1. Processing Report")
