@@ -42,8 +42,7 @@ VALIDATION_RULES_CONFIG = {
 def scrub_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Performs core data cleanup: strips whitespace, drops duplicates/empty rows."""
     
-    # CRITICAL FIX: The file is often imported with the header row treated as data.
-    # We drop the first row to ensure validation starts on actual records.
+    # CRITICAL FIX: We drop the first row to ensure validation starts on actual records.
     if len(df) > 1:
         df = df.iloc[1:].reset_index(drop=True)
 
@@ -174,7 +173,7 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
                 # Check min_value
                 min_val = rule.get('min_value')
                 if min_val is not None:
-                    # FIX APPLIED HERE: Using explicit float cast for safety
+                    # CRITICAL FIX ZONE: Ensure the series is float before comparison to min_val
                     valid_numeric_series = numeric_series.dropna().astype(float) 
                     min_mask = valid_numeric_series < min_val
                     if min_mask.any():
@@ -218,6 +217,8 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
     
     # 4. ADVANCED CHECK: Date Overlap
     if all(col in df.columns for col in ['startdate', 'enddate', 'campsiteid']):
+        df['startdate'] = pd.to_datetime(df['startdate'], errors='coerce')
+        df['enddate'] = pd.to_datetime(df['enddate'], errors='coerce')
         overlap_errors = check_date_overlaps(df)
         if overlap_errors:
             for error in overlap_errors:
@@ -295,16 +296,25 @@ def main_app():
                 # Display detailed error report
                 st.subheader("2. Detailed Error Report")
                 
-                # Sort errors for better readability (by row, then column)
-                error_report.sort(key=lambda e: (e.get('row', 'Z'), e['column']))
+                # Crash-Proof Sorting Logic
+                def stable_row_sort_key(e):
+                    row_value = e.get('row')
+                    try:
+                        return int(row_value) 
+                    except (ValueError, TypeError):
+                        return 999999 
                 
+                error_report.sort(key=lambda e: (stable_row_sort_key(e), e['column']))
+
                 for error in error_report:
-                    row_info = f"Row {error.get('row', 'N/A')}"
-                    val_info = f"Value: '{error.get('value', 'N/A')}'"
+                    report_col_name = error['column']
+                    # Final crash-proof value extraction
+                    error_value = str(error.get('value', 'N/A'))
+                    val_info = f" (Value: '{error_value}')" if error_value != 'N/A' else ""
                     
                     st.markdown(
                         f"**❌ [{error.get('type')}]** {error['message']}<br>"
-                        f"&nbsp;&nbsp;&nbsp;&nbsp;`{row_info}, Column: {error['column']}` {val_info}", 
+                        f"&nbsp;&nbsp;&nbsp;&nbsp;`Row {error.get('row', 'N/A')}, Column: {report_col_name}` {val_info}", 
                         unsafe_allow_html=True
                     )
                 
