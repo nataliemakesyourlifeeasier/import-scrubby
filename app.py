@@ -171,19 +171,27 @@ def validate_dataframe(df: pd.DataFrame, rules: list) -> list:
                             "value": df.loc[idx, col_name], "message": f"Value is not a valid number."
                         })
                 
-                # Check min_value
+ # Check min_value
                 min_val = rule.get('min_value')
                 if min_val is not None:
-                    # FIX APPLIED HERE: Ensure the series is float before comparison to min_val
-                    valid_numeric_series = numeric_series.dropna().astype(float) 
-                    min_mask = valid_numeric_series < min_val
-                    if min_mask.any():
-                        error_indices = valid_numeric_series[min_mask].index.tolist()
-                        for idx in error_indices:
-                            errors.append({
-                                "type": "VALUE_ERROR", "column": report_col_name, "row": idx + 2,
-                                "value": df.loc[idx, col_name], "message": f"Value must be greater than or equal to {min_val}."
-                            })
+                    # FIX APPLIED HERE: Add a fail-safe check for the comparison
+                    valid_numeric_series = numeric_series.dropna() 
+                    
+                    # Convert min_val to numeric (it's safe as it comes from JSON)
+                    min_val = float(min_val) 
+                    
+                    # Ensure series contains only numeric types before comparison
+                    valid_numeric_series = pd.to_numeric(valid_numeric_series, errors='coerce').dropna()
+                    
+                    if not valid_numeric_series.empty:
+                        min_mask = valid_numeric_series < min_val
+                        if min_mask.any():
+                            error_indices = valid_numeric_series[min_mask].index.tolist()
+                            for idx in error_indices:
+                                errors.append({
+                                    "type": "VALUE_ERROR", "column": report_col_name, "row": idx + 2,
+                                    "value": df.loc[idx, col_name], "message": f"Value must be greater than or equal to {min_val}."
+                                })
 
             except Exception:
                 pass # Already handled by other checks
