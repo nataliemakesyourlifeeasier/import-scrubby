@@ -7,4 +7,4 @@ Streamlit app to scrub and validate csv Reservation Import files
      - pets defaulted to 0 if null
 4) Validates data
 5) If Validation fails, will give report with specific rows and data values needed to proceed
-6) If Validation passes, creates a downloadable .csv file
+6) If Validation passes, creates a downloadable .csv file to upload to ReservationImport task
